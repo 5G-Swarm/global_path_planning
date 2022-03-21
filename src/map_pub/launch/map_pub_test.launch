@@ -1,0 +1,6 @@
+<launch>
+  <arg name="/use_sim_time" value="true"/>
+  <node name="map_pub" pkg="map_pub" type="map_pub_test" output="screen"/>
+
+</launch>
+
