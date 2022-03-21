@@ -6,6 +6,7 @@
 #include <tf/transform_listener.h>
 #include <map_msgs/OccupancyGridUpdate.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include "bspline.cpp"
 #include <queue>
@@ -37,6 +38,7 @@ namespace global_path_planning
                 NODE = private_nh;
                 costmap_sub_global_ = private_nh.subscribe<nav_msgs::OccupancyGrid>("/map_pub_cyclic", 1, &global_path_planning_::CostmapSubCallback_global, this);
                 goal_sub_global_ = private_nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, &global_path_planning_::goal_callback, this);
+                position_sub_global_ = private_nh.subscribe<nav_msgs::Odometry>("/base2map", 1, &global_path_planning_::position_callback, this);
                 costmap_with_path_ = private_nh.advertise<nav_msgs::OccupancyGrid>("/costmap_with_path", 1);
                 robot_position_pub_=private_nh.advertise<geometry_msgs::PoseStamped>("/robot_position", 1);
                 global_path_pub_=private_nh.advertise<nav_msgs::Path>("/global_path", 1);
@@ -45,6 +47,21 @@ namespace global_path_planning
 
 
         private:
+            void position_callback(const nav_msgs::Odometry::ConstPtr& msg)
+                {
+                    nav_msgs::Odometry position=*msg;
+                    double robot_position_x = position.pose.pose.position.x;
+                    double robot_position_y = position.pose.pose.position.y;
+                    // robot_index_x = global_costmap.info.width-position.pose.position.x-1;
+                    robot_index_y = 741-20*robot_position_x;
+                    robot_index_x = 1165+20*robot_position_y;
+                    // cout<<"robot_index_x:"<<robot_index_x<<"  robot_index_y:"<<robot_index_y<<endl;
+                    // double robot_index_y = position.pose.position.y;
+                    // robot_index_x = position.pose.pose.position.x;
+                    robot_index_y = global_costmap.info.height-robot_index_y-1;
+                    
+                    
+                }
             void indextocell(int index, int &x, int &y)
             {
                 x = index % global_costmap.info.width;
@@ -196,7 +213,7 @@ namespace global_path_planning
                     Path.push_back(path);
                     this_pose_stamped.pose.position.x = path%global_costmap.info.width;
                     this_pose_stamped.pose.position.y = global_costmap.info.height-path/global_costmap.info.width-1;
-                    std::cout<<"u:"<<this_pose_stamped.pose.position.x<<" v:"<<this_pose_stamped.pose.position.y<<std::endl;
+                    // std::cout<<"u:"<<this_pose_stamped.pose.position.x<<" v:"<<this_pose_stamped.pose.position.y<<std::endl;
                     Path_published.poses.push_back(this_pose_stamped);
                     
                 }
@@ -244,11 +261,12 @@ namespace global_path_planning
                 
                 int mapHeight=global_costmap.info.height;
                 int mapWidth=global_costmap.info.width;
-                int a[3];
-                a[0]=(global_local_pose.pose.position.x)*100000;
-                a[1]=(global_local_pose.pose.position.y)*100000;
-                a[2]=global_costmap.info.resolution*100000;
-                robot_index=(a[1]/a[2])*global_costmap.info.width+a[0]/a[2];
+                // int a[3];
+                // a[0]=(global_local_pose.pose.position.x)*100000;
+                // a[1]=(global_local_pose.pose.position.y)*100000;
+                // a[2]=global_costmap.info.resolution*100000;
+                // robot_index=(a[1]/a[2])*global_costmap.info.width+a[0]/a[2];
+                robot_index = robot_index_y*global_costmap.info.width+robot_index_x;
 
 
                 // std::cout<<"robot_index"<<robot_index<<std::endl;
@@ -298,6 +316,7 @@ namespace global_path_planning
             ros::NodeHandle NODE;
             ros::Subscriber costmap_sub_global_;
             ros::Subscriber goal_sub_global_;
+            ros::Subscriber position_sub_global_;
             ros::Publisher global_path_pub_;
             ros::Publisher costmap_with_path_;
             ros::Publisher robot_position_pub_;
@@ -310,7 +329,8 @@ namespace global_path_planning
             std::vector<bool> OGM;//check whether the cell is known
             vector<int> Path;
             vector<int> Path_smooth;
-
+            int robot_index_x=0;
+            int robot_index_y=0;
             std::mutex lock_costmap;
             std::thread tf_thread_;
             tf::TransformListener tf_listener_;

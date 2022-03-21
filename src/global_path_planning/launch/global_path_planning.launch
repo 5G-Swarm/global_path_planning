@@ -1,7 +1,10 @@
 <launch>
   <arg name="/use_sim_time" value="true"/>
   <node name="global_path_planning" pkg="global_path_planning" type="global_path_planning_" output="screen"/>
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find frontier_detection)/rviz/elevation_map_visualization.rviz" /> -->
-  <!--<node name="tf_transformer" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.57 0 0 PandarQT Pandar 100"/>-->
+
+  <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(find map_pub)/map/5G.yaml"/>
+  <node name="map_pub_cyclic" pkg="map_pub" type="map_pub" output="screen"/>
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find map_pub)/rviz/map.rviz" /> -->
 </launch>
+
 
