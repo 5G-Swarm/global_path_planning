@@ -13,11 +13,12 @@
 // #include <boost>
 #include <time.h>
 #include <fstream>
+#include <algorithm>
 
 #define INF INT_MAX
 using namespace std;
 
-namespace frontier_detection
+namespace global_path_planning
 {
 
     struct Node{
@@ -27,17 +28,16 @@ namespace frontier_detection
         return cost < a.cost;
     }
     };
-    class frontierdetection
+    class global_path_planning_
     {
         public:
-            frontierdetection(ros::NodeHandle private_nh)
+            global_path_planning_(ros::NodeHandle private_nh)
             {
                 getCostmap = false;
                 NODE = private_nh;
-                costmap_sub_global_ = private_nh.subscribe<nav_msgs::OccupancyGrid>("/map_pub_cyclic", 1, &frontierdetection::CostmapSubCallback_global, this);
-                goal_sub_global_ = private_nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, &frontierdetection::goal_callback, this);
+                costmap_sub_global_ = private_nh.subscribe<nav_msgs::OccupancyGrid>("/map_pub_cyclic", 1, &global_path_planning_::CostmapSubCallback_global, this);
+                goal_sub_global_ = private_nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, &global_path_planning_::goal_callback, this);
                 costmap_with_path_ = private_nh.advertise<nav_msgs::OccupancyGrid>("/costmap_with_path", 1);
-                frontier_pub_=private_nh.advertise<geometry_msgs::PoseStamped>("/frontier/goal", 1);
                 robot_position_pub_=private_nh.advertise<geometry_msgs::PoseStamped>("/robot_position", 1);
                 global_path_pub_=private_nh.advertise<nav_msgs::Path>("/global_path", 1);
 
@@ -127,22 +127,6 @@ namespace frontier_detection
 
             bool path_planning(int start_index, int goal_index, nav_msgs::OccupancyGrid global_costmap, std::vector<int>& plan_result)
             {
-                // ROS_INFO("Got a start: %.2f, %.2f, and a goal: %.2f, %.2f", start.pose.position.x, start.pose.position.y, 
-                //             goal.pose.position.x,goal.pose.position.y);
-                //ros::Time time_1 = ros::Time::now();
-                // double wx = start.pose.position.x;
-                // double wy = start.pose.position.y;
-                // unsigned int start_x, start_y;
-                // costmap_->worldToMap(wx, wy, start_x, start_y);
-                // int start_index = costmap_->getIndex(start_x, start_y);
-
-                
-                // wx = goal.pose.position.x;
-                // wy = goal.pose.position.y;
-
-                // unsigned int goal_x, goal_y;
-                // costmap_->worldToMap(wx, wy, goal_x, goal_y);
-                // int goal_index = costmap_->getIndex(goal_x, goal_y);
                 int map_size = global_costmap.data.size();
                 vector<float> gCosts(map_size, INF);
                 vector<int> cameFrom(map_size, -1);
@@ -210,52 +194,16 @@ namespace frontier_detection
                 for(int i = 0; i < bestPath.size(); i=i+20){
                     path = bestPath[i];
                     Path.push_back(path);
-                    
                     this_pose_stamped.pose.position.x = path%global_costmap.info.width;
                     this_pose_stamped.pose.position.y = global_costmap.info.height-path/global_costmap.info.width-1;
                     std::cout<<"u:"<<this_pose_stamped.pose.position.x<<" v:"<<this_pose_stamped.pose.position.y<<std::endl;
                     Path_published.poses.push_back(this_pose_stamped);
+                    
                 }
                 global_path_pub_.publish(Path_published);
 
                 cout << "/***********/" << "bestPath.size():" << bestPath.size() << "*****" <<"Path.size():" << Path.size() << endl;
-                
-                // vector<double> x_set, y_set;
-                // for(int i = 0; i < Path.size(); i++){
-                // unsigned int tmp1, tmp2;
-                // tmp1 = Path[i]%global_costmap.info.width;
-                // tmp2 = Path[i]/global_costmap.info.width;
-                // // costmap_->indexToCells(Path[i], tmp1, tmp2);
-                // double x, y;
-                // // costmap_->mapToWorld(tmp1,tmp2, x, y);
-                // // x_set.push_back(x);
-                // // y_set.push_back(y);
-                // x_set.push_back(tmp1);
-                // y_set.push_back(tmp2);
-                // }
-                
-                
-
-                
-                
-                // //b-spline
-                // Points points;
-                // points = B_Spline(x_set,y_set);
-                
-                // ros::Time plan_time = ros::Time::now();
-                // for(int i = 0; i < points.points_x.size(); i++){
-                //     Path_smooth.push_back(points.points_x[i]+points.points_y[i]*global_costmap.info.width);
-
-
-                // }
-
-
-                
-                // //ros::Time time_2 = ros::Time::now();
-                // //ROS_INFO("Time is %f ms", (time_2 - time_1).toSec() * 1000.0);
-
-
-
+               
                 return true;
             
             }
@@ -352,7 +300,6 @@ namespace frontier_detection
             ros::Subscriber goal_sub_global_;
             ros::Publisher global_path_pub_;
             ros::Publisher costmap_with_path_;
-            ros::Publisher frontier_pub_;
             ros::Publisher robot_position_pub_;
             nav_msgs::OccupancyGrid global_costmap;
             nav_msgs::OccupancyGrid local_costmap;
@@ -379,9 +326,9 @@ namespace frontier_detection
 }
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "frontier_detection");
+    ros::init(argc, argv, "global_path_planning");
     ros::NodeHandle private_nh1("~");
-    frontier_detection::frontierdetection ta(private_nh1);
+    global_path_planning::global_path_planning_ ta(private_nh1);
     ros::MultiThreadedSpinner spinner;
     spinner.spin();
     return 0;
