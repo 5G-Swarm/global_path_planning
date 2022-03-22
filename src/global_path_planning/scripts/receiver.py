@@ -19,7 +19,7 @@ class Receiver(object):
         self.timeout = False
         # publisher
         self.pub = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-        self.sub = rospy.Subscriber("/global_path", Path, self.pathCallback)
+        self.sub = rospy.Subscriber("/global_path_planning", Path, self.pathCallback)
         rospy.init_node('joy_receiver')
         rospy.spin()
 
@@ -27,11 +27,16 @@ class Receiver(object):
         while True:
             try:
                 data, _ = self.sock.recvfrom(4096)
-                x, y = data.decode("utf-8").split(',')
-                # print(x, y)
+                splitted = data.decode("utf-8").split(',')
+                goal_x, goal_y = splitted[0], splitted[1]
+                robot_x, robot_y = -9999, -9999
+                if len(splitted) == 4:
+                    robot_x, robot_y = splitted[2], splitted[3]
                 goal = PoseStamped()
-                goal.pose.position.x = int(x)
-                goal.pose.position.y = int(y)
+                goal.pose.position.x = int(goal_x)
+                goal.pose.position.y = int(goal_y)
+                goal.pose.orientation.x = int(robot_x)
+                goal.pose.orientation.y = int(robot_y)
                 self.pub.publish(goal)
                 self.timeout = False
             except socket.timeout:

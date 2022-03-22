@@ -336,7 +336,7 @@ namespace global_path_planning
             std::mutex lock_costmap;
             std::thread tf_thread_;
             tf::TransformListener tf_listener_;
-            int robot_index=6059348;
+            int robot_index=0;
             int goal_index;
             int temp_goal_index;
             int seed;
