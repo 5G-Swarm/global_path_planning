@@ -59,6 +59,8 @@ namespace global_path_planning
             //         // double robot_index_y = position.pose.position.y;
             //         // robot_index_x = position.pose.pose.position.x;
             //         robot_index_y = global_costmap.info.height-robot_index_y-1;
+                    
+                    
             //     }
             void indextocell(int index, int &x, int &y)
             {
@@ -206,8 +208,7 @@ namespace global_path_planning
                 nav_msgs::Path Path_published;
                 int path;
                 geometry_msgs::PoseStamped this_pose_stamped;
-                Path.push_back(robot_index);
-                for(int i = 40; i < bestPath.size(); i=i+20){
+                for(int i = 0; i < bestPath.size(); i=i+20){
                     path = bestPath[i];
                     Path.push_back(path);
                     this_pose_stamped.pose.position.x = path%global_costmap.info.width;
@@ -231,8 +232,6 @@ namespace global_path_planning
                 // a[1]=(global_goal_pose.pose.position.y)*100000;
                 // a[2]=global_costmap.info.resolution*100000;
                 // goal_index = (a[1]/a[2])*global_costmap.info.width+a[0]/a[2];
-                // std::cout<<"goal_index:"<<goal_index<<std::endl;
-                // std::cout<<"goal_data:"<<global_costmap.data.at(1)<<std::endl;
                 goal_index = (global_costmap.info.height-global_goal_pose.pose.position.y-1)*global_costmap.info.width+global_goal_pose.pose.position.x;
                 if(global_goal_pose.pose.orientation.x!=-9999&&global_goal_pose.pose.orientation.x!=-9999)
                     robot_index =(global_costmap.info.height-global_goal_pose.pose.orientation.y-1)*global_costmap.info.width+global_goal_pose.pose.orientation.x;
@@ -337,11 +336,7 @@ namespace global_path_planning
             std::mutex lock_costmap;
             std::thread tf_thread_;
             tf::TransformListener tf_listener_;
-            // int robot_index=6059348;
-            int robot_index=6076752;
-            // int robot_index=7802786;//eroded_map occupied
-            
-            
+            int robot_index=6059348;
             int goal_index;
             int temp_goal_index;
             int seed;

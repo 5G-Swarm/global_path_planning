@@ -38,28 +38,30 @@ namespace global_path_planning
                 NODE = private_nh;
                 costmap_sub_global_ = private_nh.subscribe<nav_msgs::OccupancyGrid>("/map_pub_cyclic", 1, &global_path_planning_::CostmapSubCallback_global, this);
                 goal_sub_global_ = private_nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, &global_path_planning_::goal_callback, this);
-                // position_sub_global_ = private_nh.subscribe<nav_msgs::Odometry>("/base2map", 1, &global_path_planning_::position_callback, this);
+                position_sub_global_ = private_nh.subscribe<nav_msgs::Odometry>("/base2map", 1, &global_path_planning_::position_callback, this);
                 costmap_with_path_ = private_nh.advertise<nav_msgs::OccupancyGrid>("/costmap_with_path", 1);
                 robot_position_pub_=private_nh.advertise<geometry_msgs::PoseStamped>("/robot_position", 1);
-                global_path_pub_=private_nh.advertise<nav_msgs::Path>("/global_path_planning", 1);
+                global_path_pub_=private_nh.advertise<nav_msgs::Path>("/global_path", 1);
 
             }
 
 
         private:
-            // void position_callback(const nav_msgs::Odometry::ConstPtr& msg)
-            //     {
-            //         nav_msgs::Odometry position=*msg;
-            //         double robot_position_x = position.pose.pose.position.x;
-            //         double robot_position_y = position.pose.pose.position.y;
-            //         // robot_index_x = global_costmap.info.width-position.pose.position.x-1;
-            //         robot_index_y = 741-20*robot_position_x;
-            //         robot_index_x = 1165+20*robot_position_y;
-            //         // cout<<"robot_index_x:"<<robot_index_x<<"  robot_index_y:"<<robot_index_y<<endl;
-            //         // double robot_index_y = position.pose.position.y;
-            //         // robot_index_x = position.pose.pose.position.x;
-            //         robot_index_y = global_costmap.info.height-robot_index_y-1;
-            //     }
+            void position_callback(const nav_msgs::Odometry::ConstPtr& msg)
+                {
+                    nav_msgs::Odometry position=*msg;
+                    double robot_position_x = position.pose.pose.position.x;
+                    double robot_position_y = position.pose.pose.position.y;
+                    // robot_index_x = global_costmap.info.width-position.pose.position.x-1;
+                    robot_index_y = 741-20*robot_position_x;
+                    robot_index_x = 1165+20*robot_position_y;
+                    // cout<<"robot_index_x:"<<robot_index_x<<"  robot_index_y:"<<robot_index_y<<endl;
+                    // double robot_index_y = position.pose.position.y;
+                    // robot_index_x = position.pose.pose.position.x;
+                    robot_index_y = global_costmap.info.height-robot_index_y-1;
+                    
+                    
+                }
             void indextocell(int index, int &x, int &y)
             {
                 x = index % global_costmap.info.width;
@@ -104,6 +106,7 @@ namespace global_path_planning
                 }
                 return neighborIndexes;
             }
+            
             double getMoveCost(int firstIndex, int secondIndex)
             {
                 unsigned int tmp1, tmp2;
@@ -139,7 +142,42 @@ namespace global_path_planning
                 
                 return abs(goalY - startY) + abs(goalX - startX);
             }
-
+            void find_closest_point(int index, nav_msgs::OccupancyGrid global_costmap, int &closest_idx)
+            {
+                int a[4]={1,(int)global_costmap.info.width,-1,-(int)global_costmap.info.width};
+                std::unordered_map<int, int> visited, unvisited;
+                std::queue<int> id;
+                int current;
+                if(global_costmap.data[index]==0)
+                {
+                    closest_idx=index;
+                    return 0;
+                }
+                // if(occupancy_map.data[start_idx]<97)
+                // {
+                    id.push(index);
+                    while (id.size()) 
+                    {
+                        current = id.front();
+                        id.pop();
+                        for(int i=0;i<4;i++)
+                        {
+                            int neighbor_id=current+a[i];
+                            if((global_costmap.data[neighbor_id]==100)&&!(visited[neighbor_id]))
+                            {
+                                if(global_costmap.data[current]==0)
+                                {
+                                    closest_idx=current;
+                                    id=queue<int>();
+                                    break;
+                                }
+                                    id.push(neighbor_id);
+                                    ++visited[neighbor_id];
+                            }
+                        }
+                    }
+                // }
+            }
             bool path_planning(int start_index, int goal_index, nav_msgs::OccupancyGrid global_costmap, std::vector<int>& plan_result)
             {
                 int map_size = global_costmap.data.size();
@@ -206,8 +244,7 @@ namespace global_path_planning
                 nav_msgs::Path Path_published;
                 int path;
                 geometry_msgs::PoseStamped this_pose_stamped;
-                Path.push_back(robot_index);
-                for(int i = 40; i < bestPath.size(); i=i+20){
+                for(int i = 0; i < bestPath.size(); i=i+20){
                     path = bestPath[i];
                     Path.push_back(path);
                     this_pose_stamped.pose.position.x = path%global_costmap.info.width;
@@ -231,11 +268,7 @@ namespace global_path_planning
                 // a[1]=(global_goal_pose.pose.position.y)*100000;
                 // a[2]=global_costmap.info.resolution*100000;
                 // goal_index = (a[1]/a[2])*global_costmap.info.width+a[0]/a[2];
-                // std::cout<<"goal_index:"<<goal_index<<std::endl;
-                // std::cout<<"goal_data:"<<global_costmap.data.at(1)<<std::endl;
                 goal_index = (global_costmap.info.height-global_goal_pose.pose.position.y-1)*global_costmap.info.width+global_goal_pose.pose.position.x;
-                if(global_goal_pose.pose.orientation.x!=-9999&&global_goal_pose.pose.orientation.x!=-9999)
-                    robot_index =(global_costmap.info.height-global_goal_pose.pose.orientation.y-1)*global_costmap.info.width+global_goal_pose.pose.orientation.x;
                 std::vector<int> path;
                 path_planning(robot_index, goal_index, global_costmap, path);
 
@@ -269,7 +302,7 @@ namespace global_path_planning
                 // a[1]=(global_local_pose.pose.position.y)*100000;
                 // a[2]=global_costmap.info.resolution*100000;
                 // robot_index=(a[1]/a[2])*global_costmap.info.width+a[0]/a[2];
-                // robot_index = robot_index_y*global_costmap.info.width+robot_index_x;
+                robot_index = robot_index_y*global_costmap.info.width+robot_index_x;
 
 
                 // std::cout<<"robot_index"<<robot_index<<std::endl;
@@ -337,12 +370,10 @@ namespace global_path_planning
             std::mutex lock_costmap;
             std::thread tf_thread_;
             tf::TransformListener tf_listener_;
-            // int robot_index=6059348;
-            int robot_index=6076752;
-            // int robot_index=7802786;//eroded_map occupied
-            
-            
+            int robot_index;
+            int map_robot_index;
             int goal_index;
+            int map_goal_index;
             int temp_goal_index;
             int seed;
             int unknown_digit=100;
