@@ -4,7 +4,7 @@
 
   <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(find map_pub)/map/5G.yaml"/>
   <node name="map_pub_cyclic" pkg="map_pub" type="map_pub" output="screen"/>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find map_pub)/rviz/map.rviz" />
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find map_pub)/rviz/map.rviz" /> -->
 </launch>
 
 

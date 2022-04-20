@@ -60,14 +60,22 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-  src/bspline.cpp
+  # src/bspline.cpp
+  src/KDTree/KDTree.cpp
 )
-
+add_library(dynamicvoronoi src/dynamic_voronoi/dynamicvoronoi.cpp)
 add_executable(global_path_planning_
   src/global_path_planning.cpp
 )
 add_dependencies(global_path_planning_ ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(global_path_planning_ ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PROJECT_NAME})
+target_link_libraries(global_path_planning_ dynamicvoronoi ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PROJECT_NAME})
+
+
+
+
+add_executable(example src/dynamic_voronoi/example.cpp)
+target_link_libraries(example dynamicvoronoi)
+
 
 #############
 ## Install ##
